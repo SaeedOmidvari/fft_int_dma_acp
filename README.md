@@ -1,83 +1,109 @@
 # FFT Hardware Acceleration on Xilinx Zynq using AXI DMA + ACP
 
-Hardware-accelerated Fast Fourier Transform (FFT) implementation on **Xilinx Zynq-7000 SoC** using **AXI DMA through the ACP port**, with benchmarking between software execution on the Processing System (PS) and hardware acceleration in Programmable Logic (PL).
+Hardware-accelerated Fast Fourier Transform (FFT) implementation on **Xilinx Zynq-7000 SoC** using **AXI DMA through the ACP port**, comparing software execution on the Processing System (PS) with hardware acceleration in Programmable Logic (PL).
 
 ---
 
-# Project Overview
+## Project Overview
 
-This project implements an **8-point FFT** using two execution methods:
+This project benchmarks an **8-point FFT** implemented in two ways:
 
-## 1. Processing System (PS)
+### Processing System (PS)
 
-FFT executed in software on the ARM Cortex-A9 processor using C code.
+* ARM Cortex-A9 executes FFT in C
+* Input reordering and butterfly stages
+* Runtime measured with `XTime`
 
-### Includes:
+### Programmable Logic (PL)
 
-- Input reordering (bit-reversal style arrangement)
-- Butterfly computation stages
-- Twiddle factor multiplication
-- Execution time measurement using `XTime`
-
----
-
-## 2. Programmable Logic (PL)
-
-FFT executed in FPGA fabric using Xilinx FFT IP Core.
-
-### Connected Through:
-
-- AXI DMA
-- ACP (Accelerator Coherency Port)
-- DDR memory interface
-
-### Two DMA Modes Tested:
-
-- Polling mode
-- Interrupt mode
+* Xilinx FFT IP Core
+* AXI DMA data movement
+* ACP coherent memory access
+* Tested in **Polling** and **Interrupt** modes
 
 ---
 
-# Objectives
+## Hardware Block Design
 
-- Compare software FFT vs hardware FFT performance
-- Measure DMA overhead
-- Evaluate ACP coherent memory transfers
-- Compare polling vs interrupt transfer methods
-- Demonstrate PS/PL co-design on Zynq
+![Block Design](images/block_design.png)
 
----
+Main IP blocks:
 
-# Hardware Platform
-
-| Item | Description |
-|------|-------------|
-| Board | Digilent Arty Z7-20 |
-| SoC | Xilinx Zynq-7000 |
-| CPU | ARM Cortex-A9 |
-| FPGA Tool | Vivado 2021.2 |
-| SDK | Vitis 2021.2 |
+* Zynq Processing System
+* AXI DMA
+* FFT IP Core
+* AXI Interconnect
+* Processor System Reset
+* System ILA
 
 ---
 
-# Vivado Block Design
+## Performance Results
 
-The hardware system contains:
+![UART Output](images/uart_output.png)
 
-- Zynq Processing System
-- AXI DMA
-- FFT IP Core
-- AXI Interconnect
-- Processor Reset
-- System ILA Debug Core
+| Method           | Average Execution Time |
+| ---------------- | ---------------------- |
+| PS FFT           | 2.89 µs                |
+| PL ACP Polling   | 4.52 µs                |
+| PL ACP Interrupt | 2.58 µs                |
+
+**Observation:** For this small FFT size, interrupt-driven DMA reduced software overhead and performed best in the measured runs.
+
+---
+
+## Source Code
 
 ```text
-DDR Memory
-   ↓
-AXI DMA MM2S
-   ↓
-FFT IP Core
-   ↓
-AXI DMA S2MM
-   ↓
-DDR Memory
+src/fft_dma_benchmark.c
+```
+
+Key functions:
+
+* `InputReorder()`
+* `FFTStages()`
+* `FFTPSvsACP_poll()`
+* `FFTPSvsACP_intr()`
+* `SetupIntrSystem()`
+
+---
+
+## Repository Structure
+
+```text
+fft_int_dma_acp/
+├── hardware/
+├── images/
+│   ├── block_design.png
+│   └── uart_output.png
+├── src/
+│   └── fft_dma_benchmark.c
+└── README.md
+```
+
+---
+
+## Skills Demonstrated
+
+* FPGA design in Vivado
+* AXI DMA integration
+* ACP coherent transfers
+* Embedded C on Zynq
+* Interrupt handling with GIC
+* HW/SW co-design
+* Performance benchmarking
+
+---
+
+## Future Improvements
+
+* Larger FFT sizes (64 / 256 / 1024)
+* Scatter-gather DMA mode
+* Fixed-point FFT comparison
+* Streaming ADC input pipeline
+
+---
+
+## Author
+
+**Saeed Omidvari**
